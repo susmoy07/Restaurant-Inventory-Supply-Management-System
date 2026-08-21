@@ -1,0 +1,55 @@
+CREATE TABLE IF NOT EXISTS users (
+  id SERIAL PRIMARY KEY,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  role VARCHAR(50) NOT NULL CHECK (role IN ('Manager', 'Staff')),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS items (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  unit VARCHAR(50) NOT NULL,
+  category VARCHAR(100) NOT NULL,
+  current_stock DECIMAL(10, 2) NOT NULL DEFAULT 0,
+  reorder_level DECIMAL(10, 2) NOT NULL DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS transactions (
+  id SERIAL PRIMARY KEY,
+  item_id INTEGER REFERENCES items(id) ON DELETE CASCADE,
+  type VARCHAR(10) NOT NULL CHECK (type IN ('IN', 'OUT')),
+  quantity DECIMAL(10, 2) NOT NULL,
+  user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  idempotency_key VARCHAR(255) UNIQUE NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS suppliers (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  contact_info TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS supplier_items (
+  supplier_id INTEGER REFERENCES suppliers(id) ON DELETE CASCADE,
+  item_id INTEGER REFERENCES items(id) ON DELETE CASCADE,
+  PRIMARY KEY (supplier_id, item_id)
+);
+
+CREATE TABLE IF NOT EXISTS purchase_orders (
+  id SERIAL PRIMARY KEY,
+  supplier_id INTEGER REFERENCES suppliers(id) ON DELETE SET NULL,
+  status VARCHAR(50) NOT NULL CHECK (status IN ('Pending', 'Ordered', 'Received')),
+  created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS purchase_order_items (
+  order_id INTEGER REFERENCES purchase_orders(id) ON DELETE CASCADE,
+  item_id INTEGER REFERENCES items(id) ON DELETE CASCADE,
+  quantity DECIMAL(10, 2) NOT NULL,
+  PRIMARY KEY (order_id, item_id)
+);
