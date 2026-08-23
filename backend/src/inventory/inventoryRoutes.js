@@ -20,7 +20,7 @@ router.get('/', async (req, res) => {
 // Get low stock items
 router.get('/low-stock', async (req, res) => {
   try {
-    const { rows } = await db.query('SELECT * FROM items WHERE current_stock < reorder_level ORDER BY id');
+    const { rows } = await db.query('SELECT * FROM items WHERE current_stock <= reorder_level ORDER BY id');
     res.json(rows);
   } catch (err) {
     console.error('Error fetching low stock items:', err);
