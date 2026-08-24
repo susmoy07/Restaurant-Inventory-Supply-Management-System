@@ -8,6 +8,9 @@ const Inventory = () => {
   const [showTxModal, setShowTxModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [txType, setTxType] = useState('IN');
+  const [showLowStockOnly, setShowLowStockOnly] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
 
   const [formData, setFormData] = useState({ name: '', unit: '', category: '', reorder_level: 0 });
   const [txData, setTxData] = useState({ quantity: '' });
@@ -67,13 +70,73 @@ const Inventory = () => {
     }
   };
 
+  const categories = [...new Set(items.map(item => item.category))].filter(Boolean);
+
+  const filteredItems = items.filter(item => {
+    const matchesLowStock = showLowStockOnly ? item.current_stock <= item.reorder_level : true;
+    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = selectedCategory ? item.category === selectedCategory : true;
+    return matchesLowStock && matchesSearch && matchesCategory;
+  });
+
+  const handleClearFilters = () => {
+    setSearchQuery('');
+    setSelectedCategory('');
+  };
+
   return (
     <div className="animate-fade-in">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h2>Inventory Management</h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <h2 style={{ margin: 0 }}>Inventory Management</h2>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', background: 'rgba(255,255,255,0.1)', padding: '0.5rem 1rem', borderRadius: '8px' }}>
+            <input 
+              type="checkbox" 
+              checked={showLowStockOnly} 
+              onChange={e => setShowLowStockOnly(e.target.checked)} 
+            />
+            Low Stock Alerts
+          </label>
+        </div>
         <button className="btn btn-primary" onClick={() => setShowItemModal(true)}>
           <Plus size={18} /> New Item
         </button>
+      </div>
+
+      <div className="glass-card" style={{ marginBottom: '1.5rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+        <div className="form-group" style={{ marginBottom: 0, flex: '1 1 250px' }}>
+          <label className="form-label">Search Items</label>
+          <input 
+            type="text" 
+            className="form-input" 
+            placeholder="Search by name..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <div className="form-group" style={{ marginBottom: 0, flex: '1 1 200px' }}>
+          <label className="form-label">Category Filter</label>
+          <select 
+            className="form-input" 
+            value={selectedCategory} 
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            style={{ backgroundColor: 'var(--card-bg)' }}
+          >
+            <option value="">All Categories</option>
+            {categories.map(cat => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
+        </div>
+        {(searchQuery || selectedCategory) && (
+          <button 
+            className="btn btn-secondary" 
+            onClick={handleClearFilters}
+            style={{ padding: '0.75rem 1rem', marginBottom: '0' }}
+          >
+            Clear Filters
+          </button>
+        )}
       </div>
 
       <div className="glass-card">
@@ -89,12 +152,12 @@ const Inventory = () => {
               </tr>
             </thead>
             <tbody>
-              {items.map(item => (
+              {filteredItems.map(item => (
                 <tr key={item.id}>
                   <td>{item.name}</td>
                   <td>{item.category}</td>
                   <td>
-                    <span style={{ color: item.current_stock < item.reorder_level ? 'var(--danger)' : 'inherit', fontWeight: 'bold' }}>
+                    <span style={{ color: item.current_stock <= item.reorder_level ? 'var(--danger)' : 'inherit', fontWeight: 'bold' }}>
                       {item.current_stock} {item.unit}
                     </span>
                   </td>
