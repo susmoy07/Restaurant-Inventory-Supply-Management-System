@@ -26,7 +26,7 @@ router.get('/', async (req, res) => {
 
 // Create a stock transaction (IN/OUT)
 router.post('/', async (req, res) => {
-  const { item_id, type, quantity, idempotency_key } = req.body;
+  const { item_id, type, quantity, reason, idempotency_key } = req.body;
 
   if (!item_id || !type || !quantity || !idempotency_key) {
     return res.status(400).json({ error: 'Missing required fields' });
@@ -40,6 +40,7 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ error: 'Quantity must be positive' });
   }
 
+  const resolvedReason = reason || (type === 'IN' ? 'Manual Restock' : 'Kitchen Usage');
   const client = await db.getClient();
 
   try {
@@ -81,11 +82,11 @@ router.post('/', async (req, res) => {
       newStock -= parsedQuantity;
     }
 
-    // 3. Insert transaction
+    // 3. Insert transaction with reason
     const txResult = await client.query(
-      `INSERT INTO transactions (item_id, type, quantity, user_id, idempotency_key)
-       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [item_id, type, parsedQuantity, req.user.id, idempotency_key]
+      `INSERT INTO transactions (item_id, type, quantity, reason, user_id, idempotency_key)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [item_id, type, parsedQuantity, resolvedReason, req.user.id, idempotency_key]
     );
 
     // 4. Update item stock

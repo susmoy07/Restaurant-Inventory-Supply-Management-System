@@ -13,6 +13,9 @@ CREATE TABLE IF NOT EXISTS items (
   category VARCHAR(100) NOT NULL,
   current_stock DECIMAL(10, 2) NOT NULL DEFAULT 0,
   reorder_level DECIMAL(10, 2) NOT NULL DEFAULT 0,
+  cost_price DECIMAL(10, 2) NOT NULL DEFAULT 0,
+  expiry_date DATE,
+  batch_no VARCHAR(100),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -21,6 +24,7 @@ CREATE TABLE IF NOT EXISTS transactions (
   item_id INTEGER REFERENCES items(id) ON DELETE CASCADE,
   type VARCHAR(10) NOT NULL CHECK (type IN ('IN', 'OUT')),
   quantity DECIMAL(10, 2) NOT NULL,
+  reason VARCHAR(100) DEFAULT 'Standard',
   user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
   idempotency_key VARCHAR(255) UNIQUE NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
